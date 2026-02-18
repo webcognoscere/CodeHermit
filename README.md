@@ -131,6 +131,8 @@ All are in `.gitignore` (including `.*.codehermit-*`).
 | **`repos.json`** | List of repo names for the "Which repository?" prompt. Copy from `repos.json.example`. |
 | **`prompt.md`** | The review instructions sent to the agent. Customize to your heart's content. |
 
+> ⚠️ **Never commit** `.env`, `repos.json`, or PATs. These contain secrets and are listed in `.gitignore`—keep them that way.
+
 ---
 
 ## 🛠️ Commands
@@ -150,6 +152,14 @@ All are in `.gitignore` (including `.*.codehermit-*`).
 
 - **`npm link`** — Run once. Puts `codehermit` on your PATH. Re-run only if you `npm unlink codehermit` or change global npm.
 - **`npm run build`** — Run after code changes. The link points here, so `codehermit` always runs the latest build.
+
+---
+
+## 🚧 About this project
+
+**Work in progress.** I built CodeHermit to help me at work—I use Cursor daily, but we don't have Azure DevOps integration for automated pull request reviews yet. With limited options to automate, this is my temporary solution to stay on top of many PRs across different repos.
+
+Ideas, feedback, and contributions are welcome. If you've solved similar problems or have suggestions, I'd love to hear them.
 
 ---
 
