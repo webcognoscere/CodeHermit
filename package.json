@@ -1,0 +1,22 @@
+{
+  "name": "codehermit",
+  "version": "1.1.0",
+  "description": "Generate a PR diff and invoke Cursor CLI agent to review it. Supports Azure DevOps (PR ID/URL) and direct base/head mode.",
+  "private": true,
+  "bin": {
+    "codehermit": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "review": "node dist/cli.js",
+    "diff": "node dist/get-diff.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
