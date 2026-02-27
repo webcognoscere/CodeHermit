@@ -45,6 +45,17 @@ export function loadPrompt(configDir: string): string {
   }
 }
 
+/** Load prompt or throw. Use from API server; CLI uses loadPrompt which exits. */
+export function loadPromptOrThrow(configDir: string): string {
+  const promptPath = path.join(configDir, PROMPT_FILE);
+  try {
+    return fs.readFileSync(promptPath, 'utf-8').trim();
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Failed to load prompt: ${msg}`);
+  }
+}
+
 /**
  * Returns the command and base args for spawning the agent.
  * When AGENT_PATH points to a .ps1 file, runs it via PowerShell so it executes on Windows.
@@ -71,6 +82,90 @@ export interface RunReviewOptions {
   outputPath: string;
   /** Config dir for loading prompt (prompt text is built with diff file name) */
   configDir: string;
+}
+
+export interface RunReviewResult {
+  output: string;
+  exitCode: number;
+}
+
+export interface RunAgentOptions {
+  cwd: string;
+  prompt: string;
+}
+
+/**
+ * Async variant of runReview for API server use.
+ * Does not call process.exit() or write to process.stdout/stderr.
+ * Returns { output, exitCode } when child exits.
+ */
+export async function runReviewAsync(options: RunReviewOptions): Promise<RunReviewResult> {
+  const { cwd, diffFileName, outputPath, configDir } = options;
+  const promptTemplate = loadPromptOrThrow(configDir);
+  const prompt = promptTemplate.replace(/\.codehermit-diff\.txt/g, diffFileName);
+  const { command: agentCmd, args: agentBaseArgs } = getAgentSpawnOptions();
+
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const fileStream = fs.createWriteStream(outputPath, { encoding: 'utf-8' });
+
+    const child = spawn(agentCmd, [...agentBaseArgs, '--trust', '-p', prompt], {
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      chunks.push(chunk);
+      fileStream.write(chunk);
+    });
+    child.stdout?.on('end', () => fileStream.end());
+
+    child.on('error', (err: NodeJS.ErrnoException) => {
+      fileStream.end();
+      reject(err);
+    });
+
+    child.on('exit', (code: number | null) => {
+      fileStream.end();
+      resolve({
+        output: Buffer.concat(chunks).toString('utf-8'),
+        exitCode: code ?? 0,
+      });
+    });
+  });
+}
+
+/**
+ * Run the agent with a custom prompt (no diff file).
+ * Used by POST /run endpoint.
+ */
+export async function runAgent(options: RunAgentOptions): Promise<{ output: string; exitCode: number }> {
+  const { cwd, prompt } = options;
+  const { command: agentCmd, args: agentBaseArgs } = getAgentSpawnOptions();
+
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+
+    const child = spawn(agentCmd, [...agentBaseArgs, '--trust', '-p', prompt], {
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: true,
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    child.on('error', (err: NodeJS.ErrnoException) => {
+      reject(err);
+    });
+
+    child.on('exit', (code: number | null) => {
+      resolve({
+        output: Buffer.concat(chunks).toString('utf-8'),
+        exitCode: code ?? 0,
+      });
+    });
+  });
 }
 
 export function runReview(options: RunReviewOptions): void {
