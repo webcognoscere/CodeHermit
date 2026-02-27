@@ -21,7 +21,7 @@
 
 CodeHermit is a CLI that **reviews your pull requests** by diffing two branches and handing the result to the Cursor AI agent. No more copy-pasting diffs into chat. No more context switching. Just run a command and get feedback.
 
-Works with **Azure DevOps** (PR ID or URL) or in **direct mode** (any base + head branch). Run it from anywhere—your repo, your desktop, your coffee shop.
+Works with **Azure DevOps** (PR ID or URL) or in **direct mode** (any base + head branch). Run it from anywhere—your repo, your desktop, your coffee shop. Or run **`codehermit serve`** to expose an HTTP API for tools like Halley.
 
 ```
        ___/~~~~~\___
@@ -47,6 +47,7 @@ npm link
 # 3. Review a PR—that's it
 codehermit 182370                    # Azure PR by ID
 codehermit main feature/my-branch    # Direct: base + head
+codehermit serve                     # Or start the API server (localhost:3947)
 ```
 
 **First time?** Copy `.env.example` → `.env` and set `REPOS_ROOT` (e.g. `c:\code\repos`). For Azure mode, add `AZURE_ORG_URL`, `AZURE_PROJECT`, `AZURE_PAT`.
@@ -142,9 +143,55 @@ All are in `.gitignore` (including `.*.codehermit-*`).
 | `codehermit --help` | Usage, options, examples |
 | `codehermit --version` | Version + logo |
 | `codehermit --status` | Agent installed? Auth? Azure config? Config dir? |
+| `codehermit serve` | Start the API server (see [Server mode](#-server-mode) below) |
 | `npm run build` | Compile TypeScript → `dist/` |
 | `npm start` / `npm run review` | Run the CLI |
+| `npm run serve` | Start the API server directly |
 | `npm run diff` | Diff only (`node dist/get-diff.js [base] [head]`) |
+
+---
+
+## 🌐 Server mode
+
+CodeHermit can run as an HTTP API server so tools like Halley can invoke CodeHermit's AI/agent operations over HTTP instead of spawning the CLI.
+
+### Start the server
+
+```bash
+codehermit serve
+# Server listening on http://0.0.0.0:3947
+```
+
+**Port and host:** Set `CODEHERMIT_PORT` (default `3947`) and `CODEHERMIT_HOST` (default `0.0.0.0`) to customize.
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Liveness check. Returns `{ status: "ok", version, agentInstalled }` |
+| `POST` | `/review-pr` | PR code review (same as CLI). Body: `{ prIdOrUrl }` or `{ baseBranch, headBranch, repo, outputDir? }` |
+| `POST` | `/run` | Generic agent run with custom prompt. Body: `{ repoPath, prompt }` |
+
+### Example requests
+
+```bash
+# Health check
+curl http://localhost:3947/health
+
+# PR review (Azure mode)
+curl -X POST http://localhost:3947/review-pr -H "Content-Type: application/json" \
+  -d '{"prIdOrUrl": "182370"}'
+
+# PR review (direct mode)
+curl -X POST http://localhost:3947/review-pr -H "Content-Type: application/json" \
+  -d '{"baseBranch": "main", "headBranch": "feature/xyz", "repo": "Org.RepoName"}'
+
+# Generic agent run
+curl -X POST http://localhost:3947/run -H "Content-Type: application/json" \
+  -d '{"repoPath": "c:\\code\\repos\\MyRepo", "prompt": "Scan this repo for issues."}'
+```
+
+**CORS:** By default `Access-Control-Allow-Origin: *`. Set `CODEHERMIT_CORS_ORIGIN` to restrict origins.
 
 ---
 
@@ -160,6 +207,8 @@ All are in `.gitignore` (including `.*.codehermit-*`).
 **Work in progress.** I built CodeHermit to help me at work—I use Cursor daily, but we don't have Azure DevOps integration for automated pull request reviews yet. With limited options to automate, this is my temporary solution to stay on top of many PRs across different repos.
 
 Ideas, feedback, and contributions are welcome. If you've solved similar problems or have suggestions, I'd love to hear them.
+
+**Changelog:** See [CHANGELOG.md](CHANGELOG.md) for version history and recent changes.
 
 ---
 

@@ -90,6 +90,9 @@ OPTIONS
   --version               Print version and exit.
   --status                Print agent and Azure config status and exit.
 
+  serve                   Start the API server (default: localhost:3947).
+                         Set CODEHERMIT_PORT and CODEHERMIT_HOST to customize.
+
   --pr, -p <id|url>       PR ID (e.g. 182370) or full Azure PR URL. Enables Azure mode.
   --output-dir, -o <path> Write diff and review files to this folder (e.g. "Pull Request Reviews").
                           Creates <path>/<repo-name>/ with one subfolder per repo.
@@ -101,6 +104,7 @@ EXAMPLES
   codehermit 182370
   codehermit --pr "https://dev.azure.com/Org/Project/_git/Repo/pullrequest/182370"
   codehermit main feature/my-pr
+  codehermit serve
   codehermit main feature/xyz --output-dir "./Pull Request Reviews"
   codehermit main feature/xyz --repo YourOrg.YourRepo
 
@@ -230,6 +234,13 @@ async function main(): Promise<void> {
   }
 
   const configDir = getConfigDir();
+
+  if (process.argv[2] === 'serve') {
+    loadEnv(configDir);
+    const { startServer } = await import('./server');
+    await startServer();
+    return;
+  }
 
   if (process.argv.includes('--version')) {
     loadEnv(configDir);

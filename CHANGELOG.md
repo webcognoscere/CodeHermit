@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-02-27
+
+### Added
+
+- **API server mode** – New `codehermit serve` subcommand starts an HTTP server on `localhost:3947` (configurable via `CODEHERMIT_PORT` and `CODEHERMIT_HOST`).
+- **`GET /health`** – Liveness check returning `{ status, version, agentInstalled }`.
+- **`POST /review-pr`** – PR code review over HTTP. Accepts `prIdOrUrl` (Azure mode) or `baseBranch` + `headBranch` + `repo` (direct mode). Same behavior as CLI.
+- **`POST /run`** – Generic agent run with custom prompt. Body: `{ repoPath, prompt }` for defect scans, ticket analysis, etc.
+- **CORS support** – Configurable via `CODEHERMIT_CORS_ORIGIN` (default `*`).
+- **`runReviewAsync()`** and **`runAgent()`** – Async variants in `review.ts` for server use (no `process.exit()`).
+- **`resolveReviewParams()`** – Shared logic in `src/lib/review-params.ts` for resolving PR parameters from API or CLI input.
+
+### Changed
+
+- CLI help now documents `serve` subcommand and example.
+
 ## [1.1.0] - 2025-02-17
 
 ### Added
@@ -26,5 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config (`.env`, `prompt.md`, `repos.json`) loaded from package directory; never inferred from current working directory.
 - README with linking/rebuilding notes and full usage.
 
+[1.2.0]: https://github.com/your-org/personal-assistant/compare/codehermit-v1.1.0...codehermit-v1.2.0
 [1.1.0]: https://github.com/your-org/personal-assistant/compare/codehermit-v1.0.0...codehermit-v1.1.0
 [1.0.0]: https://github.com/your-org/personal-assistant/releases/tag/codehermit-v1.0.0
